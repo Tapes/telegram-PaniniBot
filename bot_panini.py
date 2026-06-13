@@ -21,6 +21,7 @@ PRODUCTS = {
 
 last_state = {}
 history = {}
+initial_check_done = False
 
 # Corrigir encoding
 for stream_name in ("stdout", "stderr"):
@@ -106,9 +107,11 @@ async def history_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # -------- MONITOR --------
 async def monitor(context: ContextTypes.DEFAULT_TYPE):
-    global last_state, history, CHAT_ID
+    global last_state, history, CHAT_ID, initial_check_done
 
     print("[MONITOR] A verificar...", flush=True)
+
+    available_products = []
 
     for name, url in PRODUCTS.items():
         available = check_stock(url)
@@ -116,14 +119,21 @@ async def monitor(context: ContextTypes.DEFAULT_TYPE):
 
         print(f"[CHECK] {name} -> {available}", flush=True)
 
+        # ------------------------
+        # PRIMEIRA EXECUÇÃO
+        # ------------------------
         if previous is None:
             last_state[name] = available
+
+            if available:
+                available_products.append(f"🟢 {name}")
+
             continue
 
-        # 🔥 mudança detectada
+        # ------------------------
+        # MUDANÇA DE ESTADO
+        # ------------------------
         if available != previous:
-
-            print(f"[MUDANÇA] {name}", flush=True)
 
             now = datetime.now().strftime("%d/%m %H:%M")
             estado = "Disponível" if available else "Esgotado"
@@ -134,20 +144,45 @@ async def monitor(context: ContextTypes.DEFAULT_TYPE):
             history[name].append(f"{now} → {estado}")
             history[name] = history[name][-10:]
 
-            if available:
-                texto = f"🔥 DISPONÍVEL!\n{name}\n{url}"
-            else:
-                texto = f"❌ ESGOTADO!\n{name}\n{url}"
+            texto = (
+                f"🔥 DISPONÍVEL!\n{name}\n{url}"
+                if available
+                else f"❌ ESGOTADO!\n{name}\n{url}"
+            )
 
             if CHAT_ID:
                 await context.bot.send_message(
                     chat_id=CHAT_ID,
                     text=texto
                 )
-            else:
-                print("[ERRO] CHAT_ID não definido!", flush=True)
 
         last_state[name] = available
+
+    # ------------------------
+    # PRIMEIRA NOTIFICAÇÃO (SÓ UMA VEZ)
+    # ------------------------
+    if not initial_check_done:
+        initial_check_done = True
+
+        if CHAT_ID:
+
+            if available_products:
+
+                msg = "📦 PRODUTOS DISPONÍVEIS AGORA\n\n"
+                msg += "PRODUTO                          ESTADO\n"
+                msg += "-----------------------------------------\n"
+
+                for name in PRODUCTS:
+                    if last_state.get(name):
+                        msg += f"{name[:30]:<30} 🟢 DISPONÍVEL\n"
+
+            else:
+                msg = "📦 Nenhum produto disponível neste momento."
+
+            await context.bot.send_message(
+                chat_id=CHAT_ID,
+                text=msg
+            )
 
 
 # -------- ERROR --------
