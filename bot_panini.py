@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # -------- CONFIG --------
 TOKEN = os.getenv("TOKEN")
@@ -192,6 +195,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 
 
 # -------- APP --------
+print("TOKEN =", TOKEN)
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
