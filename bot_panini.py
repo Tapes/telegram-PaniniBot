@@ -1,12 +1,13 @@
 import requests
 import sys
+import os
 from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from datetime import datetime
 
 # -------- CONFIG --------
-TOKEN = "8979502192:AAEpZ4nx0pZiX8qNY708s1dTZQSO-_eKda0"
+TOKEN = os.getenv("TOKEN")
 CHAT_ID = None  # 👈 guardado após /start
 
 # 👉 Lista de produtos
